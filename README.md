@@ -1,34 +1,36 @@
-# TikTok Repost Cleaner
+# Repost Cleaner
 
-A local browser helper for previewing visible repost cards on TikTok and opening each card's native menu. **It does not automatically remove reposts.** You choose TikTok's own “Remove repost” action for each post and verify the result.
+A local-first TikTok repost review helper. The project includes a Chrome Manifest V3 extension and a GitHub Pages landing page.
 
-## Chrome on Windows
+## Current capabilities
 
-1. Download this repository using GitHub's **Code → Download ZIP** button.
-2. Extract the ZIP.
-3. Open `chrome://extensions`.
-4. Enable **Developer mode**.
-5. Click **Load unpacked** and select the `chrome-extension` folder.
-6. Open TikTok, sign in normally, and navigate to your profile's **Reposts** tab.
-7. Click the extension icon and choose **Open cleaner panel**.
-8. The panel lists video cards currently loaded on the page. Click **Open menu**, then select TikTok's **Remove repost** option yourself.
+- Detects video cards currently rendered on TikTok's Reposts page.
+- Opens the native menu for an individual visible card.
+- Keeps the user in control: select TikTok's own “Remove repost” option and verify the result.
+- Runs in the existing TikTok browser session; no password or cookies are collected.
+- Mobile-friendly information page and a rough manual cleanup-time estimator.
 
-The helper does not automatically scroll, bulk-delete, or confirm removals. Scroll TikTok yourself to load more posts and use **Refresh list**.
+## Install on Chrome (Windows)
 
-## Safari on iPhone
+1. Download the repository ZIP and extract it.
+2. Open `chrome://extensions`.
+3. Enable Developer mode.
+4. Click **Load unpacked** and select the `chrome-extension` folder.
+5. Open TikTok.com, sign in normally, and visit your profile's Reposts tab.
+6. Click the extension icon → **Open cleaner panel**.
 
-The GitHub Pages website works in Safari as a guide, but a normal website cannot inspect or control TikTok in another tab or in the TikTok app. Direct iPhone Safari automation would require a separately packaged and installed iOS Safari Web Extension; that app is not included here.
+Scroll TikTok to load more posts, then refresh the panel. It only sees cards currently present in the page.
+
+## iPhone / Safari
+
+The Pages site is responsive and can be used in iPhone Safari as a guide. A regular website cannot inspect the TikTok app or another Safari tab. Native iPhone automation would require a separately built and installed iOS app containing a Safari Web Extension. This repository does not currently include that app.
 
 ## GitHub Pages
 
-The Pages site is a static guide. It cannot run browser extensions or control TikTok by itself:
 https://zerryh.github.io/tiktok-repost-cleaner/
 
-## Privacy and limitations
+## Important limitations
 
-- No passwords, cookies, session tokens, or account data are collected or transmitted.
-- The extension is limited to TikTok pages and operates on the already-open page.
-- It only detects video cards currently rendered in the page; it cannot guarantee a complete inventory.
-- TikTok may change its interface and break detection.
-- Always review each post and verify any change in TikTok.
-- Unofficial project; not affiliated with TikTok.
+This release is a preview and manual-action helper. It does **not** offer one-click bulk deletion, guaranteed complete scanning, date-based filtering, background removal, or verified removal history. TikTok may change its interface and break selectors. No automated “human-like” timing is used to bypass platform controls.
+
+Unofficial project, not affiliated with TikTok or ByteDance.
