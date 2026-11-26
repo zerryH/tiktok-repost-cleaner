@@ -1,35 +1,34 @@
 # TikTok Repost Cleaner
-Local date-range repost scanner. **Preview by default**; removal mode requires `--apply` and typing `REMOVE`. TikTok's DOM changes frequently; actions may be skipped and must be manually verified.
+
+A local browser helper for previewing visible repost cards on TikTok and opening each card's native menu. **It does not automatically remove reposts.** You choose TikTok's own “Remove repost” action for each post and verify the result.
+
+## Chrome on Windows
+
+1. Download this repository using GitHub's **Code → Download ZIP** button.
+2. Extract the ZIP.
+3. Open `chrome://extensions`.
+4. Enable **Developer mode**.
+5. Click **Load unpacked** and select the `chrome-extension` folder.
+6. Open TikTok, sign in normally, and navigate to your profile's **Reposts** tab.
+7. Click the extension icon and choose **Open cleaner panel**.
+8. The panel lists video cards currently loaded on the page. Click **Open menu**, then select TikTok's **Remove repost** option yourself.
+
+The helper does not automatically scroll, bulk-delete, or confirm removals. Scroll TikTok yourself to load more posts and use **Refresh list**.
+
+## Safari on iPhone
+
+The GitHub Pages website works in Safari as a guide, but a normal website cannot inspect or control TikTok in another tab or in the TikTok app. Direct iPhone Safari automation would require a separately packaged and installed iOS Safari Web Extension; that app is not included here.
 
 ## GitHub Pages
-The Pages website is a guide only. Playwright automation runs locally, not on GitHub Pages.
 
-## Install
-Python 3.10+:
-```bash
-python -m pip install -r requirements.txt
-python -m playwright install chromium
-``
+The Pages site is a static guide. It cannot run browser extensions or control TikTok by itself:
+https://zerryh.github.io/tiktok-repost-cleaner/
 
-## Preview
-Dates inclusive, UTC:
-```bash
-python repost_agent.py --username YOUR_USERNAME --start 2024-07-20 --end 2024-08-15
-``
-Browser opens; log in yourself. Session is stored locally in `tiktok_browser_profile/`.
+## Privacy and limitations
 
-## Optional removal
-Only after reviewing preview:
-```bash
-python repost_agent.py --username YOUR_USERNAME --start 2024-07-20 --end 2024-08-15 --apply
-``
-Type `REMOVE` to confirm. It only attempts to click a visible explicit **Remove repost** menu item; if not found, it skips. Verify results manually.
-
-## Safety/privacy
-Never upload the local browser profile. Cookies and credentials aren't read by the code or sent to this project. `.gitignore` excludes profile/session files. This is unofficial and not affiliated with TikTok.
-
-## Known limitations
-- Repost tab/menu selectors can break when TikTok updates its site.
-- The scanner is limited by scroll count and posts loaded in the browser.
-- Date decoding assumes the TikTok numeric ID timestamp format.
-- It is not guaranteed to identify or remove every repost.
+- No passwords, cookies, session tokens, or account data are collected or transmitted.
+- The extension is limited to TikTok pages and operates on the already-open page.
+- It only detects video cards currently rendered in the page; it cannot guarantee a complete inventory.
+- TikTok may change its interface and break detection.
+- Always review each post and verify any change in TikTok.
+- Unofficial project; not affiliated with TikTok.
