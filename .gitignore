@@ -1,0 +1,8 @@
+tiktok_browser_profile/
+playwright/.auth/
+.auth/
+.env
+*.log
+__pycache__/
+.venv/
+venv/
