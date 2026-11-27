@@ -412,7 +412,7 @@
         '<strong style="font-size:17px">Repost Cleaner</strong>' +
         '<button id="rc-close" style="background:#29372f;color:white;border:0;border-radius:7px;padding:7px 10px">Close</button>' +
       '</div>' +
-      '<p style="color:#b8c9bd;margin:10px 0">Finds visible videos on your Reposts tab. It uses TikTok\\'s own menu, one post at a time.</p>' +
+      '<p style="color:#b8c9bd;margin:10px 0">Finds visible videos on your Reposts tab. It uses TikTok\'s own menu, one post at a time.</p>' +
       '<label for="rc-date" style="display:block;font-size:12px;color:#d3ded6;margin:10px 0 5px">Only videos uploaded on this date</label>' +
       '<input id="rc-date" type="date" style="width:100%;box-sizing:border-box;padding:9px;background:#0d1410;color:#f1f5f2;border:1px solid #425448;border-radius:7px;font:inherit">' +
       '<p style="color:#a7b8ac;font-size:11px;margin:6px 0 10px">Important: this is the original video upload date encoded in its TikTok ID, not the date you reposted it. TikTok does not expose a reliable repost date in this view.</p>' +
