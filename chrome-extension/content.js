@@ -5,6 +5,8 @@
 
   let panel = null, running = false, paused = false, stopRequested = false;
   let removed = 0, skipped = 0, processed = new Set(), runTotal = 0, lastLoadedCount = 0;
+  let securityStopped = false;
+  let remainingQueue = [];
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
   const norm = value => String(value || "").replace(/\s+/g, " ").trim().toLowerCase();
   const MEDIA = 'a[href*="/video/"], a[href*="/photo/"]';
@@ -113,6 +115,91 @@
     return loadedTiles().filter(item => inRange(item, r));
   }
 
+  function securityChallengeReason() {
+    const challengeSelectors = [
+      'iframe[src*="captcha" i]',
+      '[data-e2e*="captcha" i]',
+      '[id*="captcha" i]',
+      '[class*="captcha" i]'
+    ];
+    for (const selector of challengeSelectors) {
+      const match = [...document.querySelectorAll(selector)].find(visible);
+      if (match) return "a CAPTCHA or verification challenge";
+    }
+
+    const patterns = [
+      /\bcaptcha\b/i,
+      /security verification required/i,
+      /verify to continue/i,
+      /complete the security check/i,
+      /unusual activity detected/i,
+      /suspicious activity detected/i,
+      /too many requests/i,
+      /temporarily blocked/i,
+      /access restricted/i,
+      /try again later/i
+    ];
+    const dialogs = [...document.querySelectorAll('[role="dialog"], [aria-modal="true"]')]
+      .filter(visible)
+      .map(el => el.innerText || "")
+      .join(" ");
+    const body = String(document.body?.innerText || "").slice(0, 18000);
+    if (patterns.some(pattern => pattern.test(dialogs))) return "TikTok displayed a security or rate-limit notice";
+    if (patterns.some(pattern => pattern.test(body))) return "TikTok displayed a security or rate-limit notice";
+    return null;
+  }
+
+  function storeManualQueue() {
+    const safeQueue = remainingQueue.map(item => ({
+      id: item.id,
+      url: item.href,
+      uploadDate: item.uploadDate || null
+    }));
+    if (!chrome.storage?.local) return Promise.resolve();
+    return chrome.storage.local.set({repostCleanerManualQueue: safeQueue});
+  }
+
+  function stopForSecurity(reason) {
+    if (!running || securityStopped) return;
+    securityStopped = true;
+    stopRequested = true;
+    paused = false;
+    storeManualQueue().catch(() => {});
+    render("Stopped automatically: " + reason + ". No more actions will run. Your unfinished post links are saved for manual review.");
+  }
+
+  async function copyManualQueue() {
+    let queue = remainingQueue;
+    if (!queue.length && chrome.storage?.local) {
+      try {
+        const saved = await chrome.storage.local.get("repostCleanerManualQueue");
+        queue = Array.isArray(saved.repostCleanerManualQueue) ? saved.repostCleanerManualQueue : [];
+      } catch (_) {}
+    }
+    const urls = queue.map(item => item.url || item.href).filter(Boolean);
+    if (!urls.length) {
+      render("No unfinished post links are saved.");
+      return;
+    }
+    const value = urls.join("\n");
+    try {
+      await navigator.clipboard.writeText(value);
+      render("Copied " + urls.length + " unfinished post links. Remove them manually in TikTok.");
+    } catch (_) {
+      const area = document.createElement("textarea");
+      area.value = value;
+      area.style.position = "fixed";
+      area.style.opacity = "0";
+      panel.appendChild(area);
+      area.select();
+      const ok = document.execCommand("copy");
+      area.remove();
+      render(ok
+        ? "Copied " + urls.length + " unfinished post links. Remove them manually in TikTok."
+        : "Clipboard access failed. Try copying the saved links from the extension's local storage.");
+    }
+  }
+
   function controlText(el) {
     return norm([
       el?.innerText, el?.getAttribute("aria-label"),
@@ -144,6 +231,13 @@
   async function waitFor(getValue, timeout = 10000, interval = 150) {
     const end = Date.now() + timeout;
     while (Date.now() < end && !stopRequested) {
+      if (running) {
+        const reason = securityChallengeReason();
+        if (reason) {
+          stopForSecurity(reason);
+          return null;
+        }
+      }
       try {
         const value = getValue();
         if (value) return value;
@@ -239,6 +333,11 @@
   }
 
   async function processOne(item, index) {
+    const challenge = securityChallengeReason();
+    if (challenge) {
+      stopForSecurity(challenge);
+      return;
+    }
     if (!item.link?.isConnected || !clickSafe(item.link)) {
       skipped++;
       render("Post is no longer available in the loaded grid. Skipped safely.");
@@ -253,6 +352,7 @@
     }, 12000, 200);
 
     if (!control) {
+      if (securityStopped) return;
       skipped++;
       const closed = await closeViewer(item.id);
       render(closed
@@ -304,6 +404,11 @@
 
   async function bulkRemove() {
     const r = rangeValue();
+    const challenge = securityChallengeReason();
+    if (challenge) {
+      render("TikTok is showing " + challenge + ". Complete TikTok's own verification in the browser; this extension will not automate around it.");
+      return;
+    }
     if (!isRepostsPage()) {
       render("Reposts tab not detected. Open your own profile’s Reposts tab and refresh the count.");
       return;
@@ -329,9 +434,14 @@
     running = true;
     paused = false;
     stopRequested = false;
+    securityStopped = false;
     removed = 0;
     skipped = 0;
     processed = new Set();
+    remainingQueue = matches.map(item => ({
+      id: item.id, href: item.href, uploadDate: item.uploadDate
+    }));
+    storeManualQueue().catch(() => {});
     runTotal = Math.min(100, matches.length);
     lastLoadedCount = initial.length;
 
@@ -359,13 +469,21 @@
       processed.add(item.id);
       attempts++;
       await processOne(item, attempts);
+      if (securityStopped) break;
+      remainingQueue = remainingQueue.filter(entry => entry.id !== item.id);
+      storeManualQueue().catch(() => {});
       await sleep(650);
     }
 
     running = false;
     paused = false;
-    if (stopRequested) render("Stopped. No further posts will be processed.");
-    else if (attempts >= 100) render("100-post batch finished. Refresh the grid and start another batch to continue.");
+    if (securityStopped) {
+      storeManualQueue().catch(() => {});
+      render("Stopped for TikTok verification or a rate limit. Complete verification manually; copy the unfinished links below for manual review.");
+    } else if (stopRequested) {
+      storeManualQueue().catch(() => {});
+      render("Stopped. No further posts will be processed.");
+    } else if (attempts >= 100) render("100-post batch finished. Refresh the grid and start another batch to continue.");
     else render("Finished the matching posts currently loaded by TikTok. Scroll to load more, refresh, then run another batch.");
   }
 
@@ -397,6 +515,8 @@
       '</div>' +
       '<p style="color:#a7b8ac;font-size:11px;margin:7px 0 10px">Inclusive range: original video upload date (UTC), not the date you reposted it. TikTok does not expose a reliable repost timestamp here.</p>' +
       '<button id="rc-refresh" style="width:100%;padding:8px;background:#29372f;color:#f1f5f2;border:1px solid #425448;border-radius:8px">Refresh loaded posts</button>' +
+      '<button id="rc-copy-queue" style="width:100%;padding:8px;margin-top:7px;background:#202b36;color:#e8eef4;border:1px solid #354352;border-radius:8px">Copy unfinished links</button>' +
+      '<div id="rc-queue-info" style="color:#91a397;font-size:11px;margin-top:5px"></div>' +
       '<div id="rc-status" style="margin-top:10px;padding:10px;background:#1a2820;border-radius:8px">Ready.</div>' +
       '<p id="rc-count" style="color:#b8c9bd;font-size:12px;margin:9px 0 4px">Removed: 0 · Skipped: 0 · Loaded: 0</p>' +
       '<p id="rc-matches" style="color:#b8c9bd;font-size:11px;margin:0 0 4px">Matching loaded posts: 0</p>' +
@@ -426,6 +546,19 @@
           ? "Invalid range: the start date must be on or before the end date."
           : "Date range updated. Click Refresh loaded posts to recalculate matches.");
       });
+    }
+
+    panel.querySelector("#rc-copy-queue").onclick = () => { copyManualQueue(); };
+
+    if (chrome.storage?.local) {
+      chrome.storage.local.get("repostCleanerManualQueue").then(saved => {
+        if (!panel) return;
+        const queue = Array.isArray(saved.repostCleanerManualQueue) ? saved.repostCleanerManualQueue : [];
+        if (queue.length) {
+          panel.querySelector("#rc-queue-info").textContent =
+            queue.length + " unfinished links saved from an interrupted run.";
+        }
+      }).catch(() => {});
     }
 
     panel.querySelector("#rc-refresh").onclick = () => {
@@ -463,6 +596,20 @@
     };
     render();
   }
+
+  const securityObserver = new MutationObserver(() => {
+    if (!running || securityStopped) return;
+    const reason = securityChallengeReason();
+    if (reason) stopForSecurity(reason);
+  });
+  try {
+    securityObserver.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["src", "class", "aria-label"]
+    });
+  } catch (_) {}
 
   chrome.runtime.onMessage.addListener(message => {
     if (message?.type === "OPEN_REPOST_CLEANER") show();

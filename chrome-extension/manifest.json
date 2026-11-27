@@ -1,14 +1,27 @@
 {
   "manifest_version": 3,
   "name": "TikTok Repost Cleaner",
-  "version": "1.1.0",
-  "description": "Date-range review and safer native removal of your own TikTok reposts.",
-  "permissions": ["activeTab"],
-  "host_permissions": ["https://www.tiktok.com/*"],
-  "action": { "default_popup": "popup.html" },
-  "content_scripts": [{
-    "matches": ["https://www.tiktok.com/*"],
-    "js": ["content.js"],
-    "run_at": "document_idle"
-  }]
+  "version": "1.1.1",
+  "description": "Date-range review, safer native repost removal and CAPTCHA-aware stop protection.",
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://www.tiktok.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.tiktok.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
 }

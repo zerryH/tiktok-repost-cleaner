@@ -41,3 +41,10 @@ The extension works locally in your existing browser session. It does not collec
 A website cannot control the TikTok app or another Safari tab on iPhone. A native iOS/Safari version is not included.
 
 Unofficial project; not affiliated with TikTok or ByteDance.
+
+
+## CAPTCHA and account-protection handling (v1.1.1)
+
+If TikTok displays a CAPTCHA, verification screen, unusual-activity warning or rate-limit notice, the extension stops immediately. It does not solve, hide, bypass or retry the challenge.
+
+The unfinished post URLs are saved locally in Chrome extension storage and can be copied with **Copy unfinished links**. Complete TikTok's own verification in the browser and use TikTok normally; the extension does not automatically resume a bulk run after a challenge. Manually review the saved links in TikTok or contact TikTok Support if the restriction remains.
