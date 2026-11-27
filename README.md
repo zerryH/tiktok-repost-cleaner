@@ -1,6 +1,8 @@
-# Repost Cleaner
+# TikTok Repost Cleaner
 
-A local-first TikTok repost review and removal helper. The project includes a Chrome Manifest V3 extension and a GitHub Pages landing page.
+A Chrome Manifest V3 extension for reviewing and removing your own TikTok reposts. It runs inside your signed-in TikTok tab.
+
+**No Python, Playwright, command line, server, password or cookie export is required.**
 
 ## Install on Chrome (Windows)
 
@@ -8,30 +10,34 @@ A local-first TikTok repost review and removal helper. The project includes a Ch
 2. Open `chrome://extensions`.
 3. Enable **Developer mode**.
 4. Click **Load unpacked** and select the `chrome-extension` folder.
-5. Open TikTok, sign in normally, and visit your own profile's **Reposts** tab.
-6. Click the extension icon and choose **Open cleaner panel**.
-7. Scroll the Reposts tab to load posts, then click **Refresh loaded posts**.
+5. Open TikTok and sign in normally.
+6. Open your own profile's **Reposts** tab.
+7. Click the extension icon and choose **Open cleaner panel**.
+8. Scroll the Reposts page to load the posts you want included, then click **Refresh loaded posts**.
 
-## Date filter — important distinction
+## Date range
 
-The exact-day filter uses the **original video's upload date**, derived from the timestamp encoded in the TikTok video ID. It does **not** mean the date you reposted that video.
+The panel has **From** and **To** fields. Both dates are inclusive. For example, 01.01.2023–01.01.2024 selects videos whose original upload dates fall inside that range.
 
-TikTok's Reposts view does not expose a reliable repost-created timestamp to this extension, so the extension must not claim it can target a specific reposting date. Posts whose video upload date cannot be decoded are excluded when a date is selected.
+Important: this is the **original video upload date**, not the day your account reposted it. TikTok's documented repost-video response provides the original video's `create_time`, not a per-user repost timestamp. This extension must not claim to filter by the date you tapped Repost.
 
-## Current behavior and limits
+Dates are read in UTC from the timestamp encoded in TikTok's video ID. Posts with an unreadable date are excluded when a range is selected.
 
-- Counts visible video links even when TikTok's menu button cannot be identified.
-- Opens TikTok's own menu and processes one post at a time.
-- Uses the visible **Remove repost** option and skips uncertain controls.
-- Runs in the existing browser session; no passwords or cookies are collected.
-- Only processes posts currently loaded in the Reposts page.
-- Stops after 100 attempts per run; scroll to load more posts and run again.
-- TikTok may change its interface and break selectors. Refresh the page and reload the extension if the panel cannot connect.
+## How removal works
 
-This is a manual-confirmation helper, not a guaranteed one-click bulk deletion tool. Removal makes real changes to your account, so verify the selected date and the posts before starting.
+- Detects repost tiles using TikTok's profile-grid `data-e2e` hooks, with a main-grid fallback.
+- Opens each post, finds TikTok's repost control and checks that the post is currently reposted.
+- Clicks the native remove/repost toggle only when the repost state is positively identified.
+- Waits for the state change and skips uncertain actions instead of clicking a second time.
+- Supports pause and stop.
+- Processes at most 100 posts per batch. Refresh and start another batch to continue.
 
-## iPhone / Safari
+TikTok changes its website frequently. This code has passed a JavaScript syntax check, but live-page behavior still depends on the controls currently shown to your account. Test a small batch first and verify the result in TikTok.
 
-The Pages site is a guide only. A website cannot inspect or control the TikTok app or another Safari tab. Native iPhone automation would require a separately packaged Safari Web Extension and iOS app; that is not included here.
+## Privacy and limitations
+
+The extension works locally in your existing browser session. It does not collect passwords, cookies or session tokens and does not upload your account data. It only operates on your own Reposts tab.
+
+A website cannot control the TikTok app or another Safari tab on iPhone. A native iOS/Safari version is not included.
 
 Unofficial project; not affiliated with TikTok or ByteDance.
