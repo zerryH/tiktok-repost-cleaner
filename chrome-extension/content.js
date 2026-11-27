@@ -48,7 +48,10 @@
           /\b(active|selected|current)\b/i.test(cls);
       })) return true;
     }
-    return /\/reposts?\/?$/i.test(location.pathname) || document.querySelectorAll(TILE).length > 0;
+    const routeIsReposts = /\/reposts?\/?$/i.test(location.pathname);
+    const visibleRepostTiles = [...document.querySelectorAll('[data-e2e="user-repost-item"]')].some(visible);
+    if (tab) return routeIsReposts || visibleRepostTiles;
+    return routeIsReposts || visibleRepostTiles;
   }
 
   function parentTile(link) {
